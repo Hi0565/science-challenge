@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="html-root">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تحدي العلوم الأساسية - الروبوت الذكي</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --iau-blue: #1E2C44;
+  --iau-light-blue: #70839C;
+  --iau-green: #00843D;
+  --gold: #C9980A;
+  --gold-light: #F5C842;
+  --dark: #0A1628;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Tajawal', sans-serif;
+  background: var(--dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: white;
+  transition: direction 0.3s ease;
+}
+
+/* ===== LANGUAGE SWITCHER ===== */
+.lang-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: bold;
+  z-index: 10;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: 0.3s;
+}
+html[dir="ltr"] .lang-btn { left: auto; right: 20px; }
+.lang-btn:hover { background: var(--iau-blue); border-color: var(--gold-light); transform: scale(1.05); }
+
+/* ===== BACKGROUND PARTICLES ===== */
+#particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.particle { position: absolute; width: 3px; height: 3px; background: var(--gold-light); border-radius: 50%; opacity: 0; animation: floatUp linear infinite; }
+@keyframes floatUp {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.3; }
+  100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+}
+
+.screen { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+
+.btn-start {
+  background: linear-gradient(135deg, var(--iau-green), #00a84f);
+  color: white; border: none; padding: 18px 60px; border-radius: 100px;
+  font-size: 1.3rem; font-weight: 700; cursor: pointer; transition: 0.2s;
+  box-shadow: 0 10px 40px rgba(0,132,61,0.4);
+}
+.btn-start:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(0,132,61,0.6); }
+
+#quiz-screen { display: none; width: 100%; max-width: 720px; margin: 0 auto; }
+
+/* ===== ENERGY BAR (ATP) ===== */
+.energy-container { width: 100%; background: rgba(255,255,255,0.1); height: 12px; border-radius: 6px; margin-bottom: 20px; overflow: hidden; position: relative; border: 1px solid rgba(255,255,255,0.2); }
+.energy-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #00843D, #00ff73); transition: width 0.4s ease, background 0.3s ease; }
+
+.journey-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 25px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 50px; overflow-x: auto; width: 100%; }
+.jb-stop { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; background: rgba(255,255,255,0.1); flex-shrink: 0; font-weight: bold; }
+.jb-stop.active { background: var(--gold); transform: scale(1.25); color: var(--dark); }
+.jb-stop.done { background: var(--iau-green); color: white; }
+
+/* ===== VIRTUAL BIO-BOT DISPLAY ===== */
+.bot-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(30, 44, 68, 0.3);
+  border-radius: 24px; padding: 20px; margin-bottom: 20px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; width: 100%; position: relative; backdrop-filter: blur(5px);
+}
+.bot-avatar {
+  font-size: 3.5rem;
+  filter: drop-shadow(0 0 15px rgba(0, 132, 61, 0.6));
+  animation: botFloat 3s ease-in-out infinite alternate;
+  transition: transform 0.3s;
+}
+@keyframes botFloat {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-8px) scale(1.05); }
+}
+.bot-bubble {
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 15px; padding: 12px 20px;
+  font-size: 1.05rem; font-weight: bold; color: var(--gold-light);
+  border-left: 4px solid var(--iau-green);
+  max-width: 90%; text-align: center;
+}
+html[dir="ltr"] .bot-bubble { border-left: none; border-right: 4px solid var(--iau-green); }
+
+.bot-container.success-glow { border-color: var(--iau-green); background: rgba(0, 132, 61, 0.1); }
+.bot-container.error-glow { border-color: #c0392b; background: rgba(192, 57, 43, 0.15); animation: shakeBox 0.4s; }
+
+@keyframes shakeBox { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+.q-card {
+  background: rgba(255,255,255,0.05); border-radius: 24px; padding: 30px;
+  margin-bottom: 25px; position: relative; border-right: 6px solid var(--iau-blue); text-align: right;
+}
+html[dir="ltr"] .q-card { text-align: left; border-right: none; border-left: 6px solid var(--iau-blue); }
+.q-number { font-size: 0.95rem; font-weight: 700; color: var(--gold-light); margin-bottom: 12px; }
+
+.options { display: grid; gap: 14px; }
+.btn-opt {
+  background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.12);
+  color: white; padding: 18px; border-radius: 16px; font-size: 1.15rem;
+  cursor: pointer; text-align: right; transition: 0.2s; font-family: inherit;
+}
+html[dir="ltr"] .btn-opt { text-align: left; }
+.btn-opt:hover { background: rgba(255,255,255,0.1); }
+html[dir="rtl"] .btn-opt:hover { transform: translateX(-6px); }
+html[dir="ltr"] .btn-opt:hover { transform: translateX(6px); }
+
+.btn-opt.correct { background: var(--iau-green) !important; border-color: var(--iau-green); font-weight: bold; }
+.btn-opt.wrong { background: #c0392b !important; border-color: #c0392b; animation: shake 0.4s; }
+
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+/* ===== AI LIVE REPORT & FINAL SCREEN ===== */
+#final-screen { display: none; }
+.cert-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+  border: 2px solid var(--gold); border-radius: 28px; padding: 35px;
+  max-width: 620px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); margin-bottom: 25px;
+}
+
+/* AI Report Dashboard Layout */
+.ai-report-box {
+  background: rgba(10, 22, 40, 0.6);
+  border: 1px dashed rgba(245, 200, 66, 0.4);
+  border-radius: 20px;
+  padding: 20px;
+  margin-top: 25px;
+  text-align: right;
+}
+html[dir="ltr"] .ai-report-box { text-align: left; }
+
+.report-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--gold-light);
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+@media(max-width: 480px) {
+  .report-grid { grid-template-columns: 1fr; }
+}
+
+.report-item {
+  background: rgba(255,255,255,0.04);
+  padding: 12px 15px;
+  border-radius: 12px;
+  border-left: 3px solid var(--iau-light-blue);
+}
+html[dir="ltr"] .report-item { border-left: none; border-right: 3px solid var(--iau-light-blue); }
+
+.report-item .label { font-size: 0.85rem; opacity: 0.7; margin-bottom: 4px; }
+.report-item .value { font-size: 1.2rem; font-weight: 700; color: white; }
+
+/* Charts Area */
+.chart-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 15px;
+  background: rgba(255,255,255,0.02);
+  padding: 15px;
+  border-radius: 14px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+/* Pure CSS/SVG Pie Chart */
+.pie-chart-wrapper {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+.pie-chart {
+  transform: rotate(-90deg);
+  border-radius: 50%;
+}
+
+.chart-legends {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-color { width: 12px; height: 12px; border-radius: 3px; }
+
+/* AI Recommendation Box */
+.ai-recommendation {
+  background: rgba(0, 132, 61, 0.1);
+  border-right: 4px solid var(--iau-green);
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+html[dir="ltr"] .ai-recommendation { border-right: none; border-left: 4px solid var(--iau-green); }
+
+footer { position: fixed; bottom: 12px; width: 100%; text-align: center; font-size: 0.85rem; opacity: 0.3; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<button class="lang-btn" onclick="toggleLanguage()" id="lang-toggle-btn">English</button>
+
+<div class="screen" id="start-screen">
+  <h1 style="font-size: 2.8rem; margin-bottom: 15px; font-weight: 900; margin-top: 20px;" id="start-title">تحدي العلوم الأساسية</h1>
+  <div style="max-width: 600px; margin-bottom: 40px;">
+    <p style="font-size: 1.25rem; line-height: 1.7; margin-bottom: 12px; opacity: 0.95;" id="start-desc">انطلق من المفاهيم والنظريات الأساسية إلى تطبيقات الإبداع والممارسة العملية</p>
+    <p style="color: var(--gold-light); font-weight: 700; font-size: 1.1rem;" id="start-sub">قصة كيمياء الحياة وتطبيقات العلوم المشتركة</p>
+    <p style="opacity: 0.6; font-size: 0.95rem; margin-top: 8px; font-weight: 500;" id="start-dept">رحلة تفاعلية يقدمها قسم العلوم الأساسية</p>
+  </div>
+  <button class="btn-start" onclick="startGame()" id="start-btn">🚀 ابدأ التحدي العلمي</button>
+</div>
+
+<div class="screen" id="quiz-screen">
+  <div style="width: 100%; text-align: right; display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 5px; opacity: 0.8;">
+    <span id="atp-label">مخزون الطاقة الخلوية (ATP)</span>
+    <span id="atp-count">100%</span>
+  </div>
+  <div class="energy-container">
+    <div class="energy-fill" id="energy-bar"></div>
+  </div>
+
+  <div class="journey-bar" id="journey-bar"></div>
+
+  <div class="bot-container" id="bot-box">
+    <div class="bot-avatar" id="bot-avatar">🤖</div>
+    <div class="bot-bubble" id="bot-bubble">جارٍ استدعاء المرشد الذكي...</div>
+  </div>
+
+  <div class="q-card" id="q-card">
+    <div class="q-number" id="q-number">المحطة ١</div>
+    <div class="q-text" id="q-text" style="font-size: 1.35rem; font-weight: 700; line-height: 1.6;"></div>
+  </div>
+  <div class="options" id="options"></div>
+  
+  <div style="margin-top:25px; display:flex; justify-content: space-between; width:100%; opacity:0.5; font-size:0.9rem; font-weight:500;">
+    <span id="score-correct-label">الإجابات الصحيحة: <span id="score-correct">0</span></span>
+    <span>DEPARTMENT OF BASIC SCIENCES</span>
+  </div>
+</div>
+
+<div class="screen" id="final-screen">
+  <div class="cert-card">
+    <div style="font-size: 55px; margin-bottom: 10px; margin-top: 10px;">🏆</div>
+    <h2 style="font-size: 2.1rem; color: var(--gold-light); margin-bottom: 10px; font-weight: 900;" id="final-title">وثيقة مستكشف العلوم</h2>
+    <p style="font-size: 1.1rem; opacity: 0.95; line-height: 1.6;" id="final-desc">
+      تهانينا! لقد تمكنت من الربط الذكي بين مقررات الكيمياء والأحياء وتطبيقاتها الحيوية في المركبات والخلايا الحية بكفاءة عالية.
+    </p>
+    
+    <div class="ai-report-box">
+      <div class="report-title">
+        <span>📊</span>
+        <span id="rep-title">تقرير الأداء الحي الذكي (AI Live Report)</span>
+      </div>
+      
+      <div class="report-grid">
+        <div class="report-item">
+          <div class="label" id="rep-time-lbl">الوقت المستغرق (Time):</div>
+          <div class="value" id="rep-time-val">00:00</div>
+        </div>
+        <div class="report-item">
+          <div class="label" id="rep-mis-lbl">الأخطاء المرتكبة (Mistakes):</div>
+          <div class="value" id="rep-mis-val" style="color: #ff4d4d;">0</div>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <div class="pie-chart-wrapper">
+          <svg class="pie-chart" width="100" height="100" viewBox="0 0 32 32">
+            <circle r="16" cx="16" cy="16" fill="#ff4d4d" />
+            <circle id="pie-segment-correct" r="16" cx="16" cy="16" fill="transparent" 
+                    stroke="#00843D" stroke-width="32" stroke-dasharray="0 100" />
+          </svg>
+        </div>
+        <div class="chart-legends">
+          <div class="legend-item">
+            <div class="legend-color" style="background: var(--iau-green);"></div>
+            <span id="leg-corr">إجابات صحيحة</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #ff4d4d;"></div>
+            <span id="leg-wrng">إجابات خاطئة / محاولات</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-recommendation" id="ai-rec-box">
+        <b>توصية الذكاء الاصطناعي:</b> جارٍ تحليل الأداء...
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-start" style="padding: 14px 45px; font-size: 1.05rem;" onclick="location.reload()" id="restart-btn">🔄 إعادة التحدي</button>
+</div>
+
+<footer id="footer-text">© 2026 قسم العلوم الأساسية</footer>
+
+<script>
+let currentLang = 'ar'; 
+let current = 0, correct = 0, mistakes = 0, atpEnergy = 100;
+let startTime, timerInterval;
+
+const uiText = {
+  ar: {
+    langBtn: "English",
+    startTitle: "تحدي العلوم الأساسية",
+    startDesc: "انطلق من المفاهيم والنظريات الأساسية إلى تطبيقات الإبداع والممارسة العملية",
+    startSub: "قصة كيمياء الحياة وتطبيقات العلوم المشتركة",
+    startDept: "رحلة تفاعلية يقدمها قسم العلوم الأساسية",
+    startBtn: "🚀 ابدأ التحدي العلمي",
+    stationLabel: "🔬 محطة العلوم الأساسية: المحطة ",
+    correctLabel: "الإجابات الصحيحة: ",
+    atpLabel: "مخزون الطاقة الخلوية (ATP)",
+    finalTitle: "وثيقة مستكشف العلوم",
+    finalDesc: "تهانينا! لقد تمكنت من الربط الذكي بين مقررات الكيمياء والأحياء وتطبيقاتها الحيوية في المركبات والخلايا الحية بكفاءة عالية.",
+    restartBtn: "🔄 إعادة التحدي",
+    footer: "© 2026 قسم العلوم الأساسية",
+    repTitle: "تقرير الأداء الحي الذكي (AI Live Report)",
+    repTime: "الوقت المستغرق (Time):",
+    repMis: "الأخطاء المرتكبة (Mistakes):",
+    legCorr: "إجابات صحيحة",
+    legWrng: "إجابات خاطئة / محاولات",
+    recExcellent: "<b>توصية الذكاء الاصطناعي:</b> أداء استثنائي ومبهر! لديك ربط كيميائي حيوي فائق ودقة متناهية، نقترح عليك الانضمام للمشاريع البحثية المتقدمة بالقسم.",
+    recGood: "<b>توصية الذكاء الاصطناعي:</b> أداء رائع جداً! استيعابك للمفاهيم ممتاز، نوصيك بمراجعة بسيطة لكيمياء السكريات والأيونات لضمان العلامة الكاملة مستقبلاً.",
+    recNeedReview: "<b>توصية الذكاء الاصطناعي:</b> محاولة جيدة! ننصحك بزيارة المراجع العلمية لقسم العلوم الأساسية لتعزيز الفهم حول توازن السوائل الحيوية وهيكل المركبات العضوية."
+  },
+  en: {
+    langBtn: "العربية",
+    startTitle: "Basic Sciences Challenge",
+    startDesc: "Embark on a journey from fundamental concepts and theories to creative practical applications",
+    startSub: "The Chemistry of Life and Science Applications Story",
+    startDept: "An interactive journey presented by the Basic Sciences Department",
+    startBtn: "🚀 Start the Science Challenge",
+    stationLabel: "🔬 Basic Sciences Station: Station ",
+    correctLabel: "Correct Answers: ",
+    atpLabel: "Cellular Energy Reserve (ATP)",
+    finalTitle: "Science Explorer Certificate",
+    finalDesc: "Congratulations! You have successfully demonstrated smart integration between Chemistry and Biology courses and their vital cellular applications.",
+    restartBtn: "🔄 Restart Challenge",
+    footer: "© 2026 Department of Basic Sciences",
+    repTitle: "AI Live Performance Report",
+    repTime: "Time Elapsed:",
+    repMis: "Mistakes Made:",
+    legCorr: "Correct Answers",
+    legWrng: "Wrong Answers / Retries",
+    recExcellent: "<b>AI Recommendation:</b> Phenomenal performance! You possess excellent biochemical integration and superior accuracy. We highly recommend participating in advanced department research.",
+    recGood: "<b>AI Recommendation:</b> Very good job! Your conceptual comprehension is solid. We advise a quick review of carbohydrate chemistry and mineral functions to lock in full marks next time.",
+    recNeedReview: "<b>AI Recommendation:</b> Good attempt! We recommend consulting the Basic Sciences department study guides to reinforce topics regarding homeostasis and organic structures."
+  }
+};
+
+const questions = [
+  {
+    botSay: {
+      ar: { normal: "⚡ أهلاً بك! دعنا نختبر توازن السوائل الخلوية في جسمك أولاً..", success: "🧬 رائع! قيمة الـ pH المثالية تحافظ على ثبات التفاعلات الكيميائية الحيوية.", error: "🧪 ركز قليلاً! تذكر أن انحراف هذه القيمة يهدد توازن الحياة الحيوية." },
+      en: { normal: "⚡ Welcome! Let's test the balance of biological fluids in your cells first..", success: "🧬 Excellent! The optimal pH value maintains biochemical stability.", error: "🧪 Stay focused! Remember that fluid shift threatens homeostasis." }
+    },
+    ar: { q: "في الكيمياء الحيوية والأحياء.. ما هي القيمة المثالية لـ pH السوائل الحيوية الأساسية في خلايا الجسم للحفاظ على توازن الحياة؟", a: ["6.0", "7.4", "8.2"] },
+    en: { q: "In biochemistry and biology, what is the optimal pH value of essential biological fluids in body cells to maintain homeostasis?", a: ["6.0", "7.4", "8.2"] },
+    c: 1
+  },
+  {
+    botSay: {
+      ar: { normal: "🟢 الكربوهيدرات! لنرى كيف ترتبط جزيئات الطاقة معاً..", success: "💎 صحيح تماماً! اتحاد الجلوكوز والفركتوز يمنحنا سكر القصب أو السكروز.", error: "💥 أوه! تذكر البنية الكيميائية الأساسية للسكريات الثنائية." },
+      en: { normal: "🟢 Carbohydrates! Let's see how energy molecules chemically bond together..", success: "💎 Perfectly correct! Bonding glucose and fructose yields sucrose.", error: "💥 Oops! Recall the primary chemical structure of disaccharides." }
+    },
+    ar: { q: "تعد الكربوهيدرات مصدراً أساسياً للطاقة؛ السكروز (Sucrose) هو سكر ثنائي يتكون من ارتباط جزيئين من السكريات الأحادية هما:", a: ["جلوكوز وجالاكتوز", "جلوكوز وفركتوز", "جالاكتوز وفركتوز"] },
+    en: { q: "Carbohydrates are essential energy sources. Sucrose is a disaccharide formed by the chemical bonding of which two monosaccharides?", a: ["Glucose & Galactose", "Glucose & Fructose", "Galactose & Fructose"] },
+    c: 1
+  },
+  {
+    botSay: {
+      ar: { normal: "🥛 ماذا عن سكر الحليب؟ هل تذكر تركيبه الكيميائي الحيوي؟", success: "🟢 مذهل! الجالاكتوز والجلوكوز يشكلان معاً سكر اللاكتوز.", error: "🤔 لست متأكداً؟ فكر في السكر المميز الموجود حصرياً في منتجات الألبان." },
+      en: { normal: "🥛 What about milk sugar? Do you remember its biochemical build?", success: "🟢 Amazing! Galactose and glucose combine together to form lactose.", error: "🤔 Not sure? Think of the unique sugar found exclusively in dairy." }
+    },
+    ar: { q: "سكر الحليب أو اللاكتوز (Lactose) هو أحد السكريات الثنائية الهامة حيوياً، وينتج كيميائياً من اتحاد جزيء جلوكوز مع جزيء:", a: ["جالاكتوز (Galactose)", "فركتوز (Fructose)", "ريبوز (Ribose)"] },
+    en: { q: "Milk sugar or Lactose is a biologically important disaccharide. It is chemically produced by combining a glucose molecule with:", a: ["Galactose", "Fructose", "Ribose"] },
+    c: 0
+  },
+  {
+    botSay: {
+      ar: { normal: "🩸 لننتقل إلى بروتينات الدم.. كيف ترتبط كيميائياً مع الغازات؟", success: "🔗 عبقري! ذرات الحديد (Fe) هي قلب الهيموغلوبين النابض لربط الأكسجين.", error: "❌ خطأ! ابحث عن المعدن الانتقالي المسؤول عن اللون الأحمر للخلايا." },
+      en: { normal: "🩸 Moving to blood proteins.. How do they chemically bind gases?", success: "🔗 Genius! Iron (Fe) atoms are the core of hemoglobin to bind oxygen.", error: "❌ Incorrect! Look for the transition metal that gives blood its red color." }
+    },
+    ar: { q: "يعد بروتين الهيموغلوبين ناقل الغازات الأساسي في خلايا الدم.. ما هو العنصر الكيميائي الانتقالي المرتبط به والمسؤول عن ربط الأكسجين؟", a: ["الكالسيوم", "الحديد", "الزنك"] },
+    en: { q: "Hemoglobin is the main gas transporter protein in blood cells. Which transition chemical element bound to it is responsible for binding oxygen?", a: ["Calcium", "Iron", "Zinc"] },
+    c: 1
+  },
+  {
+    botSay: {
+      ar: { normal: "⚡ محطة إيقاف النزيف! ما هو الأيون الكيميائي المحفز هنا؟", success: "🛡️ رائع! أيونات الكالسيوم هي مفتاح تنشيط شلال عمليات التخثر.", error: "⚠️ انتبه! هذا الأيون الكاتيوني ثنائي التكافؤ وليس أحادياً." },
+      en: { normal: "⚡ Coagulation cascade! Which chemical ion acts as the cofactor here?", success: "🛡️ Brilliant! Calcium ions are the key to unlocking blood clotting.", error: "⚠️ Watch out! This cofactor is a divalent cation, not monovalent." }
+    },
+    ar: { q: "أيون حيوي موجب ضروري جداً كعامل مساعد لتنشيط شلال عمليات التخثر الخلوية وإيقاف الهدر عند الإصابات، فما هو؟", a: ["الصوديوم", "البوتاسيوم", "الكالسيوم"] },
+    en: { q: "Which essential cation acts as a crucial co-factor to activate the cellular coagulation cascade and stop bleeding during injuries?", a: ["Sodium", "Potassium", "Calcium"] },
+    c: 2
+  },
+  {
+    botSay: {
+      ar: { normal: "🦴 مصفوفة العظام الصلبة.. ما هو المركب الكيميائي الأساسي؟", success: "💎 دقيق! فوسفات الكالسيوم يمنح النسيج العظمي متانته وهيكله الداعم.", error: "🦴 أعد التفكير! المركب يحتوي على عنصرين حيويين هامين للهيكل العظمي." },
+      en: { normal: "🦴 Supportive skeletal matrix.. What is the primary chemical compound?", success: "💎 Precise! Calcium phosphate gives bone tissue its rigid durability.", error: "🦴 Think again! The compound contains two essential mineral matrix keys." }
+    },
+    ar: { q: "تعتمد صلابة ومتانة النسيج العظمي الداعم في الكائنات الحية على مركب كيميائي غير عضوي يشكل 70% من تركيبها، فما هو؟", a: ["فوسفات الكالسيوم", "كربونات الصوديوم", "أكسيد الحديد"] },
+    en: { q: "The hardness and strength of supportive skeletal tissue in living organisms depend on an inorganic chemical compound that makes up 70% of its structure:", a: ["Calcium Phosphate", "Sodium Carbonate", "Iron Oxide"] },
+    c: 0
+  },
+  {
+    botSay: {
+      ar: { normal: "☀️ فيتامين الشمس الحرج.. كيف يساعد الخلايا？", success: "🔑 نعم! فيتامين D هو المفتاح الفسيولوجي لامتصاص الكالسيوم من الأمعاء.", error: "💡 تذكر! نقص هذا الفيتامين مرتبط بلين العظام وضعف امتصاص الأملاح." },
+      en: { normal: "☀️ The critical sun vitamin.. How does it help cellular absorption?", success: "🔑 Yes! Vitamin D is the physiological key for calcium intake.", error: "💡 Remember! Deficiency of this vitamin causes rickets and poor salt absorption." }
+    },
+    ar: { q: "لتعزيز العمليات الفسيولوجية، ما هو الفيتامين الحيوي الذائب في الدهون والذي يساعد الخلايا على امتصاص أملاح الكالسيوم؟", a: ["فيتامين C", "فيتامين D", "فيتامين A"] },
+    en: { q: "To promote physiological processes, which fat-soluble vitamin is vital for helping cells absorb calcium salts?", a: ["Vitamin C", "Vitamin D", "Vitamin A"] },
+    c: 1
+  },
+  {
+    botSay: {
+      ar: { normal: "💊 الأسبرين في المختبر.. ما هي طبيعته الجزيئية كيميائياً؟", success: "🧪 صحيح! حمض الأسيتيل ساليسيليك، ومن اسمه يتضح ميله الحمضي.", error: "🛑 ركز بالاسم الكيميائي للأسبرين لتكتشف طبيعته بسهولة." },
+      en: { normal: "💊 Aspirin in the lab.. What is its molecular nature?", success: "🧪 Correct! Acetylsalicylic acid is clearly acidic by nature.", error: "🛑 Look closely at the chemical name of aspirin to deduce its class." }
+    },
+    ar: { q: "تعد المركبات الكيميائية مثل الأسبرين (حمض أسيتيل ساليسيليك) من الجزيئات التي تصنف كيميائياً بأنها مواد:", a: ["حمضية", "قاعدية", "متعادلة"] },
+    en: { q: "Chemical compounds such as Aspirin (acetylsalicylic acid) are molecules classified chemically as:", a: ["Acidic", "Basic", "Neutral"] },
+    c: 0
+  },
+  {
+    botSay: {
+      ar: { normal: "🧼 المنظفات القوية.. كيف نصنف خطورتها الكيميائية؟", success: "⚠️ رائع! القواعد القوية كاوية ومذيبة للبروتينات والأنسجة الحية.", error: "❌ لا! المواد المذيبة للأنسجة العضوية هنا هي مواد قلوية عالية القوة." },
+      en: { normal: "🧼 Household detergents.. How do we classify their chemical hazard?", success: "⚠️ Great! Strong bases are highly caustic and dissolve tissue proteins.", error: "❌ No! Strong tissue-dissolving agents in cleaning are highly alkaline." }
+    },
+    ar: { q: "بناءً على قواعد السلامة الكيميائية في المختبرات، تصنف المنظفات الكيميائية المنزلية القوية والمذيبة للأنسجة بأنها مواد:", a: ["حمضية", "قاعدية", "متعادلة"] },
+    en: { q: "According to chemical laboratory safety rules, strong household cleaning agents that can dissolve biological tissues are classified as:", a: ["Acidic", "Basic", "Neutral"] },
+    c: 1
+  },
+  {
+    botSay: {
+      ar: { normal: "💧 المذيب الكوني للحياة.. كم يشكل من وزن خلاياك؟", success: "🧩 مبهر! الماء يشكل حوالي 60% لضمان حدوث التفاعلات الأيضية بكفاءة.", error: "🌊 فكر جيداً! إنها النسبة الوسطى المتوازنة لتركيب الأنسجة البشرية." },
+      en: { normal: "💧 The universal solvent of life.. How much does it make up of your weight?", success: "🧩 Impressive! Water makes up around 60% to ensure metabolic efficiency.", error: "🌊 Think again! It's the optimal balanced average for human anatomy." }
+    },
+    ar: { q: "الماء (H2O) هو المذيب الكوني الأساسي للتفاعلات الكيميائية داخل الخلايا، ما هي نسبته التقريبية في تركيب جسم الإنسان؟", a: ["40%", "60%", "90%"] },
+    en: { q: "Water (H2O) is the universal solvent for intra-cellular chemical reactions. What is its approximate percentage in the composition of the human body?", a: ["40%", "60%", "90%"] },
+    c: 1
+  },
+  {
+    botSay: {
+      ar: { normal: "👁️ المحطة الأخيرة والأكثر إعجازاً فسيولوجياً ونسيجياً..", success: "🏆 مذهل تماماً! قرنية العين تتغذى بالانتشار المباشر لتحافظ على شفافيتها التامة.", error: "👁️ اقتربت من خط النهاية! فكر في نسيج يجب أن يظل شفافاً بنسبة 100% للرؤية." },
+      en: { normal: "👁️ The final and most miraculous histological station..", success: "🏆 Magnificent! The cornea relies on direct diffusion to maintain total clarity.", error: "👁️ Almost there! Think of a tissue that must remain 100% clear for vision." }
+    },
+    ar: { q: "في الإعجاز النسيجي الحيوي (Histology).. ما هو النسيج الشفاف الذي يتغذى عبر النفاذية والانتشار المباشر للأكسجين ولا تصله أوعية دموية؟", a: ["الكبد", "قرنية العين", "الجلد"] },
+    en: { q: "In histology, which transparent biological tissue receives nutrients via direct permeability and oxygen diffusion, without any blood vessels?", a: ["Liver", "Cornea", "Skin"] },
+    c: 1
+  }
+];
+
+function toggleLanguage() {
+  currentLang = (currentLang === 'ar') ? 'en' : 'ar';
+  const root = document.getElementById('html-root');
+  root.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
+  root.setAttribute('lang', currentLang);
+  
+  updateStaticUI();
+  if (document.getElementById('quiz-screen').style.display === 'flex') {
+    showQuestion();
+  }
+  if (document.getElementById('final-screen').style.display === 'flex') {
+    renderAIReport();
+  }
+}
+
+function updateStaticUI() {
+  const lang = uiText[currentLang];
+  document.getElementById('lang-toggle-btn').textContent = lang.langBtn;
+  document.getElementById('start-title').textContent = lang.startTitle;
+  document.getElementById('start-desc').textContent = lang.startDesc;
+  document.getElementById('start-sub').textContent = lang.startSub;
+  document.getElementById('start-dept').textContent = lang.startDept;
+  document.getElementById('start-btn').textContent = lang.startBtn;
+  document.getElementById('atp-label').textContent = lang.atpLabel;
+  
+  document.getElementById('score-correct-label').innerHTML = `${lang.correctLabel} <span id="score-correct">${correct}</span>`;
+  
+  document.getElementById('final-title').textContent = lang.finalTitle;
+  document.getElementById('final-desc').textContent = lang.finalDesc;
+  document.getElementById('restart-btn').textContent = lang.restartBtn;
+  document.getElementById('footer-text').textContent = lang.footer;
+}
+
+function startGame() {
+  startTime = new Date(); // Start the timer tracking clock
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display = 'flex';
+  initJourneyBar();
+  showQuestion();
+}
+
+function initJourneyBar() {
+  const bar = document.getElementById('journey-bar');
+  bar.innerHTML = '';
+  questions.forEach((_, i) => {
+    const stop = document.createElement('div');
+    stop.className = 'jb-stop';
+    stop.textContent = i + 1;
+    bar.appendChild(stop);
+  });
+}
+
+function showQuestion() {
+  const q = questions[current];
+  const lang = uiText[currentLang];
+  
+  const botBox = document.getElementById('bot-box');
+  botBox.className = 'bot-container';
+  document.getElementById('bot-avatar').textContent = "🤖";
+  document.getElementById('bot-bubble').textContent = q.botSay[currentLang].normal;
+
+  document.getElementById('q-number').textContent = `${lang.stationLabel}${current + 1}`;
+  document.getElementById('q-text').textContent = q[currentLang].q;
+  
+  const stops = document.querySelectorAll('.jb-stop');
+  stops.forEach((s, i) => {
+    s.className = 'jb-stop' + (i < current ? ' done' : i === current ? ' active' : '');
+  });
+
+  const opts = document.getElementById('options');
+  opts.innerHTML = '';
+  q[currentLang].a.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-opt';
+    btn.textContent = opt;
+    btn.onclick = () => checkAnswer(i, btn);
+    opts.appendChild(btn);
+  });
+}
+
+function checkAnswer(idx, btn) {
+  const allButtons = document.querySelectorAll('.btn-opt');
+  allButtons.forEach(b => b.style.pointerEvents = 'none');
+  
+  const q = questions[current];
+  const botBox = document.getElementById('bot-box');
+
+  if (idx === q.c) {
+    btn.classList.add('correct');
+    botBox.className = 'bot-container success-glow';
+    document.getElementById('bot-avatar').textContent = "🎉";
+    document.getElementById('bot-bubble').textContent = q.botSay[currentLang].success;
+    
+    correct++;
+    const lang = uiText[currentLang];
+    document.getElementById('score-correct-label').innerHTML = `${lang.correctLabel} <span id="score-correct">${correct}</span>`;
+    
+    setTimeout(() => {
+      current++;
+      if (current < questions.length) showQuestion();
+      else showFinal();
+    }, 1400); 
+  } else {
+    btn.classList.add('wrong');
+    botBox.className = 'bot-container error-glow';
+    document.getElementById('bot-avatar').textContent = "💥";
+    document.getElementById('bot-bubble').textContent = q.botSay[currentLang].error;
+    
+    mistakes++; // Record the retry count/mistake
+    
+    atpEnergy = Math.max(0, atpEnergy - 10);
+    document.getElementById('energy-bar').style.width = atpEnergy + '%';
+    document.getElementById('atp-count').textContent = atpEnergy + '%';
+    
+    if(atpEnergy < 40) {
+      document.getElementById('energy-bar').style.background = 'linear-gradient(90deg, #c0392b, #ff4d4d)';
+    }
+
+    setTimeout(() => {
+      btn.classList.remove('wrong');
+      botBox.className = 'bot-container';
+      document.getElementById('bot-avatar').textContent = "🤖";
+      allButtons.forEach(b => b.style.pointerEvents = 'auto');
+    }, 1200);
+  }
+}
+
+function showFinal() {
+  document.getElementById('quiz-screen').style.display = 'none';
+  document.getElementById('final-screen').style.display = 'flex';
+  renderAIReport();
+}
+
+function renderAIReport() {
+  const lang = uiText[currentLang];
+  
+  // 1. Calculate time duration
+  const endTime = new Date();
+  const timeDiff = Math.floor((endTime - startTime) / 1000); // in seconds
+  const minutes = Math.floor(timeDiff / 60);
+  const seconds = timeDiff % 60;
+  const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  
+  // Translate UI Labels
+  document.getElementById('rep-title').textContent = lang.repTitle;
+  document.getElementById('rep-time-lbl').textContent = lang.repTime;
+  document.getElementById('rep-mis-lbl').textContent = lang.repMis;
+  document.getElementById('leg-corr').textContent = lang.legCorr;
+  document.getElementById('leg-wrng').textContent = lang.legWrng;
+  
+  // Set real numbers
+  document.getElementById('rep-time-val').textContent = formattedTime;
+  document.getElementById('rep-mis-val').textContent = mistakes;
+  
+  // 2. Generate Interactive CSS Pie Chart Segment Calculation
+  const totalFactors = correct + mistakes;
+  const correctPercentage = totalFactors > 0 ? (correct / totalFactors) * 100 : 100;
+  const strokeValue = `${correctPercentage} 100`;
+  document.getElementById('pie-segment-correct').setAttribute('stroke-dasharray', strokeValue);
+  
+  // 3. Smart Generative AI Recommendation Node Logic
+  const recBox = document.getElementById('ai-rec-box');
+  if (mistakes === 0) {
+    recBox.innerHTML = lang.recExcellent;
+    recBox.style.borderRightColor = "var(--iau-green)";
+  } else if (mistakes <= 3) {
+    recBox.innerHTML = lang.recGood;
+    recBox.style.borderRightColor = "var(--gold)";
+  } else {
+    recBox.innerHTML = lang.recNeedReview;
+    recBox.style.borderRightColor = "#ff4d4d";
+  }
+}
+
+const pContainer = document.getElementById('particles');
+for(let i = 0; i < 25; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.left = Math.random() * 100 + '%';
+  p.style.animationDuration = (Math.random() * 5 + 5) + 's';
+  pContainer.appendChild(p);
+}
+
+updateStaticUI();
+</script>
+</body>
+</html>
